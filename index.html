@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <title>Internet Bill Tracker Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --accent-color: 102, 126, 234;
+            --accent-secondary: 118, 75, 162;
+        }
+        
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body.light {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            color: #1f2937;
+        }
+        
+        body.dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+        }
+        
+        .glass {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        body.light .glass {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        
+        body.dark .glass {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gradient-accent {
+            background: linear-gradient(135deg, 
+                rgb(var(--accent-color)) 0%, 
+                rgb(var(--accent-secondary)) 100%);
+        }
+        
+        .text-accent {
+            color: rgb(var(--accent-color));
+        }
+        
+        .bg-accent-light {
+            background: rgba(var(--accent-color), 0.1);
+        }
+        
+        .border-accent {
+            border-color: rgb(var(--accent-color));
+        }
+        
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+        }
+        
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 40;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .countdown-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+        
+        .theme-color-option {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 3px solid transparent;
+        }
+        
+        .theme-color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-color-option.active {
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark .text-gray-800 { color: #f1f5f9; }
+        body.dark .text-gray-700 { color: #cbd5e1; }
+        body.dark .text-gray-600 { color: #94a3b8; }
+        body.dark .text-gray-500 { color: #64748b; }
+        body.dark .bg-gray-50 { background: #1e293b; }
+        body.dark .bg-gray-100 { background: #334155; }
+        body.dark .border-gray-200 { border-color: #475569; }
+        body.dark .border-gray-100 { border-color: #334155; }
+        
+        .streak-flame {
+            animation: flicker 2s infinite;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: rgb(var(--accent-color));
+            box-shadow: 0 0 0 3px rgba(var(--accent-color), 0.1);
+        }
+        
+        .search-highlight {
+            background: rgba(var(--accent-color), 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="p-4 light">
+    <div id="app" class="max-w-7xl mx-auto"></div>
+    
+    <script>
+        const db = new Dexie('BillTrackerDB');
+        db.version(2).stores({
+            settings: 'id',
+            payments: '++id, date, isp, amount',
+            userPrefs: 'id'
+        });
+
+        const app = {
+            settings: null,
+            payments: [],
+            userPrefs: null,
+            charts: {},
+            searchQuery: '',
+            filterMethod: 'all',
+            
+            async init() {
+                await this.loadData();
+                await this.loadUserPrefs();
+                this.applyTheme();
+                
+                if (!this.settings) {
+                    this.showWelcomeModal();
+                } else {
+                    this.render();
+                    this.renderCharts();
+                }
+            },
+            
+            async loadData() {
+                this.settings = await db.settings.get(1);
+                this.payments = await db.payments.orderBy('date').reverse().toArray();
+            },
+            
+            async loadUserPrefs() {
+                this.userPrefs = await db.userPrefs.get(1);
+                if (!this.userPrefs) {
+                    this.userPrefs = {
+                        id: 1,
+                        theme: 'light',
+                        accentColor: '102, 126, 234',
+                        accentSecondary: '118, 75, 162'
+                    };
+                    await db.userPrefs.put(this.userPrefs);
+                }
+            },
+            
+            applyTheme() {
+                document.body.className = this.userPrefs.theme + ' p-4';
+                document.documentElement.style.setProperty('--accent-color', this.userPrefs.accentColor);
+                document.documentElement.style.setProperty('--accent-secondary', this.userPrefs.accentSecondary);
+            },
+            
+            async toggleTheme() {
+                this.userPrefs.theme = this.userPrefs.theme === 'light' ? 'dark' : 'light';
+                await db.userPrefs.update(1, { theme: this.userPrefs.theme });
+                this.applyTheme();
+                this.render();
+                this.renderCharts();
+            },
+            
+            async setAccentColor(color, secondary) {
+                this.userPrefs.accentColor = color;
+                this.userPrefs.accentSecondary = secondary;
+                await db.userPrefs.update(1, { accentColor: color, accentSecondary: secondary });
+                this.applyTheme();
+                this.render();
+                this.renderCharts();
+            },
+            
+            showWelcomeModal() {
+                const modal = `
+                    <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" id="welcomeModal">
+                        <div class="glass rounded-3xl p-8 md:p-10 max-w-lg w-full" style="transform: scale(0);">
+                            <div class="text-center mb-8">
+                                <div class="w-20 h-20 mx-auto mb-6 rounded-full gradient-accent flex items-center justify-center">
+                                    <i class="fas fa-wifi text-4xl text-white"></i>
+                                </div>
+                                <h2 class="text-4xl font-bold mb-3 text-gray-800">Welcome</h2>
+                                <p class="text-gray-600 text-lg">Let's set up your bill tracking system</p>
+                            </div>
+                            <form id="welcomeForm">
+                                <div class="mb-6">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">ISP Provider</label>
+                                    <input type="text" name="isp" required 
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400 transition-all"
+                                        placeholder="e.g., Fiber@Home, BTCL">
+                                </div>
+                                <div class="mb-6">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Monthly Bill Amount</label>
+                                    <input type="number" name="monthlyAmount" required step="0.01"
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400 transition-all"
+                                        placeholder="0.00">
+                                </div>
+                                <div class="mb-8">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Connection Start Date</label>
+                                    <input type="date" name="startDate" required 
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                </div>
+                                <button type="submit" class="w-full gradient-accent text-white py-4 rounded-xl font-bold text-lg shadow-lg hover-lift">
+                                    Get Started <i class="fas fa-arrow-right ml-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('app').innerHTML = modal;
+                
+                anime({
+                    targets: '#welcomeModal > div',
+                    scale: [0, 1],
+                    duration: 600,
+                    easing: 'easeOutElastic(1, .6)'
+                });
+                
+                document.getElementById('welcomeForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    await db.settings.put({
+                        id: 1,
+                        isp: formData.get('isp'),
+                        monthlyAmount: formData.get('monthlyAmount'),
+                        startDate: formData.get('startDate')
+                    });
+                    await this.loadData();
+                    this.render();
+                    this.renderCharts();
+                    this.showToast('Setup completed successfully!', 'success');
+                };
+            },
+            
+            render() {
+                const stats = this.calculateStats();
+                const monthlyData = this.getMonthlyData();
+                const streak = this.calculateStreak();
+                
+                document.getElementById('app').innerHTML = `
+                    <header class="glass rounded-3xl p-6 md:p-8 mb-6">
+                        <div class="flex justify-between items-center flex-wrap gap-4">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center">
+                                        <i class="fas fa-wifi text-white text-xl"></i>
+                                    </div>
+                                    <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
+                                        ${this.settings.isp}
+                                    </h1>
+                                </div>
+                                <p class="text-gray-600 ml-15">Bill Tracker Dashboard</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="app.toggleTheme()" 
+                                    class="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-semibold hover:bg-gray-200 transition hover-lift">
+                                    <i class="fas fa-${this.userPrefs.theme === 'light' ? 'moon' : 'sun'} text-lg"></i>
+                                </button>
+                                <button onclick="app.showSettingsModal()" 
+                                    class="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-semibold hover:bg-gray-200 transition hover-lift">
+                                    <i class="fas fa-cog text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <!-- Bill Reminder Card -->
+                    <div class="glass rounded-3xl p-8 mb-6 hover-lift">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="flex flex-col justify-center">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">
+                                    <i class="fas fa-bell mr-2 text-accent"></i>Next Bill Reminder
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Due Date:</span>
+                                        <span class="font-bold text-gray-800">${stats.nextDueDate}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Status:</span>
+                                        <span class="font-bold ${stats.statusClass}">${stats.statusText}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Expected Amount:</span>
+                                        <span class="font-bold text-gray-800">৳${this.settings.monthlyAmount || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-center">
+                                ${this.renderCountdownCircle(stats.daysRemainingNum, stats.statusClass)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="statsGrid">
+                        ${this.renderStatCard('Streak', `${streak} months`, 'fa-fire', 'text-orange-600', 'bg-orange-50', true)}
+                        ${this.renderStatCard('Total Paid', stats.totalAmount, 'fa-money-bill-wave', 'text-emerald-600', 'bg-emerald-50')}
+                        ${this.renderStatCard('Avg/Month', stats.avgAmount, 'fa-chart-line', 'text-indigo-600', 'bg-indigo-50')}
+                        ${this.renderStatCard('Total Payments', stats.totalCount, 'fa-hashtag', 'text-blue-600', 'bg-blue-50')}
+                    </div>
+                    
+                    <!-- Monthly Summary -->
+                    <div class="glass rounded-3xl p-8 mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+                            <i class="fas fa-calendar-alt mr-2 text-accent"></i>Current Month Summary
+                        </h3>
+                        ${monthlyData.lastPayment ? `
+                            <div class="grid md:grid-cols-3 gap-6">
+                                <div>
+                                    <div class="text-sm text-gray-600 mb-1">Last Payment</div>
+                                    <div class="text-2xl font-bold text-gray-800">৳${monthlyData.lastPayment.amount}</div>
+                                    <div class="text-sm text-gray-600 mt-1">${new Date(monthlyData.lastPayment.date).toLocaleDateString()}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-600 mb-1">Payment Method</div>
+                                    <div class="text-xl font-semibold text-gray-800">
+                                        <i class="fas fa-wallet mr-2"></i>${monthlyData.lastPayment.method}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-gray-600 mb-1">Note</div>
+                                    <div class="text-lg text-gray-800">${monthlyData.lastPayment.note || 'No note'}</div>
+                                </div>
+                            </div>
+                        ` : '<p class="text-gray-600 text-center py-4">No payments this month</p>'}
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="glass rounded-3xl p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                                <i class="fas fa-chart-bar mr-2 text-accent"></i>Yearly Spending
+                            </h3>
+                            <div class="chart-container">
+                                <canvas id="yearlyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass rounded-3xl p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                                <i class="fas fa-chart-line mr-2 text-accent"></i>Monthly Trend
+                            </h3>
+                            <div class="chart-container">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="glass rounded-3xl p-6 mb-6">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2 text-sm font-semibold text-gray-700">Search</label>
+                                <input type="text" id="searchInput" placeholder="Search by amount, method, note..."
+                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800"
+                                    value="${this.searchQuery}">
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-semibold text-gray-700">Filter by Method</label>
+                                <select id="filterSelect" 
+                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800">
+                                    <option value="all">All Methods</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="bKash">bKash</option>
+                                    <option value="Nagad">Nagad</option>
+                                    <option value="Bank">Bank Transfer</option>
+                                    <option value="Card">Credit/Debit Card</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment History -->
+                    <div class="glass rounded-3xl p-6 md:p-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-800">
+                                <i class="fas fa-history mr-2 text-gray-600"></i>Payment History
+                            </h2>
+                            <span class="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                ${this.getFilteredPayments().length} records
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b-2 border-gray-200">
+                                        <th class="text-left py-4 px-3 cursor-pointer hover:bg-gray-50 rounded-lg transition text-gray-700 font-semibold" onclick="app.sortPayments('date')">
+                                            Date <i class="fas fa-sort text-xs text-gray-400"></i>
+                                        </th>
+                                        <th class="text-left py-4 px-3 cursor-pointer hover:bg-gray-50 rounded-lg transition text-gray-700 font-semibold" onclick="app.sortPayments('amount')">
+                                            Amount <i class="fas fa-sort text-xs text-gray-400"></i>
+                                        </th>
+                                        <th class="text-left py-4 px-3 text-gray-700 font-semibold">Method</th>
+                                        <th class="text-left py-4 px-3 text-gray-700 font-semibold">Note</th>
+                                        <th class="text-right py-4 px-3 text-gray-700 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentTable">
+                                    ${this.renderPaymentTable()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- FAB -->
+                    <button onclick="app.showAddPaymentModal()" 
+                        class="fab gradient-accent flex items-center justify-center text-white shadow-2xl">
+                        <i class="fas fa-plus text-2xl"></i>
+                    </button>
+                `;
+                
+                this.animateStats();
+                this.attachEventListeners();
+            },
+            
+            attachEventListeners() {
+                const searchInput = document.getElementById('searchInput');
+                const filterSelect = document.getElementById('filterSelect');
+                
+                if (searchInput) {
+                    searchInput.value = this.searchQuery;
+                    filterSelect.value = this.filterMethod;
+                    
+                    searchInput.addEventListener('input', (e) => {
+                        this.searchQuery = e.target.value;
+                        this.updatePaymentTable();
+                    });
+                    
+                    filterSelect.addEventListener('change', (e) => {
+                        this.filterMethod = e.target.value;
+                        this.updatePaymentTable();
+                    });
+                }
+            },
+            
+            getFilteredPayments() {
+                let filtered = this.payments;
+                
+                if (this.filterMethod !== 'all') {
+                    filtered = filtered.filter(p => p.method === this.filterMethod);
+                }
+                
+                if (this.searchQuery) {
+                    const query = this.searchQuery.toLowerCase();
+                    filtered = filtered.filter(p => 
+                        p.amount.toString().includes(query) ||
+                        p.method.toLowerCase().includes(query) ||
+                        (p.note && p.note.toLowerCase().includes(query))
+                    );
+                }
+                
+                return filtered;
+            },
+            
+            updatePaymentTable() {
+                const tbody = document.getElementById('paymentTable');
+                if (tbody) {
+                    tbody.innerHTML = this.renderPaymentTable();
+                }
+            },
+            
+            renderPaymentTable() {
+                const filtered = this.getFilteredPayments();
+                if (!filtered.length) {
+                    return '<tr><td colspan="5" class="text-center py-12"><div class="text-gray-400"><i class="fas fa-inbox text-5xl mb-4"></i><p class="text-lg">No payments found</p></div></td></tr>';
+                }
+                return filtered.map(p => this.renderPaymentRow(p)).join('');
+            },
+            
+            renderCountdownCircle(days, statusClass) {
+                const percentage = Math.max(0, Math.min(100, (days / 30) * 100));
+                const radius = 70;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (percentage / 100) * circumference;
+                
+                return `
+                    <div class="relative w-48 h-48">
+                        <svg class="w-full h-full countdown-ring" viewBox="0 0 160 160">
+                            <circle cx="80" cy="80" r="${radius}" 
+                                stroke="currentColor" stroke-width="12" fill="none" 
+                                class="text-gray-200" />
+                            <circle cx="80" cy="80" r="${radius}" 
+                                stroke="currentColor" stroke-width="12" fill="none"
+                                class="progress-ring-circle ${statusClass}"
+                                stroke-dasharray="${circumference}"
+                                stroke-dashoffset="${offset}"
+                                stroke-linecap="round" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <div class="text-5xl font-bold ${statusClass}">${Math.abs(days)}</div>
+                            <div class="text-sm text-gray-600 mt-1">${days < 0 ? 'overdue' : 'days left'}</div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            renderStatCard(label, value, icon, statusClass, bgClass, isStreak = false) {
+                return `
+                    <div class="glass rounded-2xl p-6 hover-lift stat-card" style="opacity: 0;">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="text-gray-600 text-xs font-medium uppercase tracking-wide mb-1">${label}</div>
+                                <div class="text-2xl font-bold ${statusClass} flex items-center gap-2">
+                                    ${value}
+                                    ${isStreak ? '<i class="fas fa-fire streak-flame"></i>' : ''}
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl ${bgClass} flex items-center justify-center">
+                                <i class="fas ${icon} text-xl ${statusClass}"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            renderPaymentRow(payment) {
+                return `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td class="py-4 px-3 text-gray-800 font-medium">${new Date(payment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        <td class="py-4 px-3 text-gray-900 font-bold">৳${payment.amount}</td>
+                        <td class="py-4 px-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <i class="fas fa-wallet mr-1 text-xs"></i>${payment.method}
+                            </span>
+                        </td>
+                        <td class="py-4 px-3 text-gray-600">${payment.note || '-'}</td>
+                        <td class="py-4 px-3 text-right">
+                            <button onclick="app.editPayment(${payment.id})" 
+                                class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition mr-1">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="app.deletePayment(${payment.id})" 
+                                class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            },
+            
+            calculateStats() {
+                const now = new Date();
+                const lastPayment = this.payments[0];
+                let daysRemainingNum = 30;
+                let nextDueDate = 'Not set';
+                let statusClass = 'text-emerald-600';
+                let statusText = 'On Track';
+                
+                if (lastPayment) {
+                    const lastDate = new Date(lastPayment.date);
+                    const nextDue = new Date(lastDate);
+                    nextDue.setDate(nextDue.getDate() + 30);
+                    nextDueDate = nextDue.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    const diffTime = nextDue - now;
+                    daysRemainingNum = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (daysRemainingNum < 0) {
+                        statusClass = 'text-red-600';
+                        statusText = 'Overdue!';
+                    } else if (daysRemainingNum < 7) {
+                        statusClass = 'text-amber-600';
+                        statusText = 'Due Soon';
+                    }
+                }
+                
+                const totalAmount = this.payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+                const avgAmount = this.payments.length ? (totalAmount / this.payments.length).toFixed(2) : '0.00';
+                
+                return {
+                    daysRemainingNum: daysRemainingNum,
+                    nextDueDate: nextDueDate,
+                    totalCount: this.payments.length,
+                    avgAmount: `৳${avgAmount}`,
+                    totalAmount: `৳${totalAmount.toFixed(2)}`,
+                    statusClass: statusClass,
+                    statusText: statusText
+                };
+            },
+            
+            getMonthlyData() {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                
+                const lastPayment = this.payments.find(p => {
+                    const pDate = new Date(p.date);
+                    return pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear;
+                });
+                
+                return { lastPayment };
+            },
+            
+            calculateStreak() {
+                if (this.payments.length === 0) return 0;
+                
+                const now = new Date();
+                let streak = 0;
+                let checkDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                
+                for (let i = 0; i < 24; i++) {
+                    const monthStart = new Date(checkDate);
+                    const monthEnd = new Date(checkDate.getFullYear(), checkDate.getMonth() + 1, 0);
+                    
+                    const hasPayment = this.payments.some(p => {
+                        const pDate = new Date(p.date);
+                        return pDate >= monthStart && pDate <= monthEnd;
+                    });
+                    
+                    if (hasPayment) {
+                        streak++;
+                        checkDate.setMonth(checkDate.getMonth() - 1);
+                    } else {
+                        break;
+                    }
+                }
+                
+                return streak;
+            },
+            
+            animateStats() {
+                anime({
+                    targets: '.stat-card',
+                    opacity: [0, 1],
+                    translateY: [30, 0],
+                    delay: anime.stagger(80),
+                    duration: 700,
+                    easing: 'easeOutCubic'
+                });
+            },
+            
+            renderCharts() {
+                setTimeout(() => {
+                    this.renderYearlyChart();
+                    this.renderMonthlyChart();
+                }, 100);
+            },
+            
+            renderYearlyChart() {
+                const canvas = document.getElementById('yearlyChart');
+                if (!canvas) return;
+                
+                if (this.charts.yearly) {
+                    this.charts.yearly.destroy();
+                }
+                
+                const yearlyData = this.getYearlyData();
+                const isDark = this.userPrefs.theme === 'dark';
+                
+                this.charts.yearly = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: yearlyData.labels,
+                        datasets: [{
+                            label: 'Total Spent',
+                            data: yearlyData.data,
+                            backgroundColor: `rgba(${this.userPrefs.accentColor}, 0.8)`,
+                            borderColor: `rgb(${this.userPrefs.accentColor})`,
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                titleColor: isDark ? '#f1f5f9' : '#1f2937',
+                                bodyColor: isDark ? '#cbd5e1' : '#4b5563',
+                                borderColor: isDark ? '#475569' : '#e5e7eb',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: (context) => `৳${context.parsed.y.toFixed(2)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: isDark ? '#334155' : '#f3f4f6' },
+                                ticks: {
+                                    color: isDark ? '#94a3b8' : '#6b7280',
+                                    callback: (value) => '৳' + value
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: isDark ? '#94a3b8' : '#6b7280' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            renderMonthlyChart() {
+                const canvas = document.getElementById('monthlyChart');
+                if (!canvas) return;
+                
+                if (this.charts.monthly) {
+                    this.charts.monthly.destroy();
+                }
+                
+                const monthlyData = this.getMonthlyTrendData();
+                const isDark = this.userPrefs.theme === 'dark';
+                
+                this.charts.monthly = new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: monthlyData.labels,
+                        datasets: [{
+                            label: 'Monthly Spending',
+                            data: monthlyData.data,
+                            borderColor: `rgb(${this.userPrefs.accentColor})`,
+                            backgroundColor: `rgba(${this.userPrefs.accentColor}, 0.1)`,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: `rgb(${this.userPrefs.accentColor})`,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                titleColor: isDark ? '#f1f5f9' : '#1f2937',
+                                bodyColor: isDark ? '#cbd5e1' : '#4b5563',
+                                borderColor: isDark ? '#475569' : '#e5e7eb',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: (context) => `৳${context.parsed.y.toFixed(2)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: isDark ? '#334155' : '#f3f4f6' },
+                                ticks: {
+                                    color: isDark ? '#94a3b8' : '#6b7280',
+                                    callback: (value) => '৳' + value
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: isDark ? '#94a3b8' : '#6b7280' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            getYearlyData() {
+                const now = new Date();
+                const years = {};
+                
+                this.payments.forEach(p => {
+                    const year = new Date(p.date).getFullYear();
+                    years[year] = (years[year] || 0) + parseFloat(p.amount);
+                });
+                
+                const sortedYears = Object.keys(years).sort();
+                return {
+                    labels: sortedYears,
+                    data: sortedYears.map(y => years[y])
+                };
+            },
+            
+            getMonthlyTrendData() {
+                const months = {};
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                this.payments.forEach(p => {
+                    const date = new Date(p.date);
+                    const key = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
+                    months[key] = (months[key] || 0) + parseFloat(p.amount);
+                });
+                
+                const sortedKeys = Object.keys(months).sort().slice(-12);
+                return {
+                    labels: sortedKeys.map(k => {
+                        const [year, month] = k.split('-');
+                        return `${monthNames[parseInt(month)]} ${year}`;
+                    }),
+                    data: sortedKeys.map(k => months[k])
+                };
+            },
+            
+            showAddPaymentModal(payment = null) {
+                const isEdit = payment !== null;
+                const modal = `
+                    <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" id="paymentModal">
+                        <div class="glass rounded-3xl p-8 max-w-lg w-full" style="transform: scale(0);">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center">
+                                    <i class="fas fa-${isEdit ? 'edit' : 'plus'} text-white text-lg"></i>
+                                </div>
+                                <h3 class="text-3xl font-bold text-gray-800">
+                                    ${isEdit ? 'Edit' : 'Add'} Payment
+                                </h3>
+                            </div>
+                            <form id="paymentForm">
+                                <div class="mb-5">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Date</label>
+                                    <input type="date" name="date" required value="${payment?.date || ''}"
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                </div>
+                                <div class="mb-5">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Amount (৳)</label>
+                                    <input type="number" name="amount" required step="0.01" value="${payment?.amount || ''}"
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all"
+                                        placeholder="0.00">
+                                </div>
+                                <div class="mb-5">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Payment Method</label>
+                                    <select name="method" required
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                        <option value="Cash" ${payment?.method === 'Cash' ? 'selected' : ''}>Cash</option>
+                                        <option value="bKash" ${payment?.method === 'bKash' ? 'selected' : ''}>bKash</option>
+                                        <option value="Nagad" ${payment?.method === 'Nagad' ? 'selected' : ''}>Nagad</option>
+                                        <option value="Bank" ${payment?.method === 'Bank' ? 'selected' : ''}>Bank Transfer</option>
+                                        <option value="Card" ${payment?.method === 'Card' ? 'selected' : ''}>Credit/Debit Card</option>
+                                    </select>
+                                </div>
+                                <div class="mb-8">
+                                    <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Note <span class="text-gray-400 text-xs normal-case">(Optional)</span></label>
+                                    <input type="text" name="note" value="${payment?.note || ''}"
+                                        class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400 transition-all"
+                                        placeholder="Cashier name or additional info">
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="submit" class="flex-1 gradient-accent text-white py-3 rounded-xl font-bold shadow-lg hover-lift">
+                                        <i class="fas fa-${isEdit ? 'save' : 'check'} mr-2"></i>${isEdit ? 'Update' : 'Save Payment'}
+                                    </button>
+                                    <button type="button" onclick="app.closeModal()" 
+                                        class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modal);
+                
+                anime({
+                    targets: '#paymentModal > div',
+                    scale: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutElastic(1, .7)'
+                });
+                
+                document.getElementById('paymentForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const paymentData = {
+                        date: formData.get('date'),
+                        amount: formData.get('amount'),
+                        method: formData.get('method'),
+                        note: formData.get('note'),
+                        isp: this.settings.isp
+                    };
+                    
+                    if (isEdit) {
+                        await db.payments.update(payment.id, paymentData);
+                        this.showToast('Payment updated successfully!', 'success');
+                    } else {
+                        await db.payments.add(paymentData);
+                        this.showToast('Payment added successfully!', 'success');
+                    }
+                    
+                    await this.loadData();
+                    this.closeModal();
+                    this.render();
+                    this.renderCharts();
+                };
+            },
+            
+            async editPayment(id) {
+                const payment = await db.payments.get(id);
+                this.showAddPaymentModal(payment);
+            },
+            
+            async deletePayment(id) {
+                if (confirm('Are you sure you want to delete this payment?')) {
+                    await db.payments.delete(id);
+                    await this.loadData();
+                    this.render();
+                    this.renderCharts();
+                    this.showToast('Payment deleted successfully!', 'info');
+                }
+            },
+            
+            sortPayments(field) {
+                if (field === 'date') {
+                    this.payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                } else if (field === 'amount') {
+                    this.payments.sort((a, b) => b.amount - a.amount);
+                }
+                this.updatePaymentTable();
+            },
+            
+            showSettingsModal() {
+                const themeColors = [
+                    { name: 'Purple', color: '102, 126, 234', secondary: '118, 75, 162' },
+                    { name: 'Blue', color: '59, 130, 246', secondary: '37, 99, 235' },
+                    { name: 'Green', color: '16, 185, 129', secondary: '5, 150, 105' },
+                    { name: 'Pink', color: '236, 72, 153', secondary: '219, 39, 119' },
+                    { name: 'Orange', color: '249, 115, 22', secondary: '234, 88, 12' },
+                    { name: 'Red', color: '239, 68, 68', secondary: '220, 38, 38' }
+                ];
+                
+                const modal = `
+                    <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" id="settingsModal">
+                        <div class="glass rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto" style="transform: scale(0);">
+                            <div class="flex items-center gap-3 mb-8">
+                                <div class="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center">
+                                    <i class="fas fa-cog text-white text-lg"></i>
+                                </div>
+                                <h3 class="text-3xl font-bold text-gray-800">Settings</h3>
+                            </div>
+                            
+                            <!-- Account Settings -->
+                            <div class="mb-8">
+                                <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-user-circle mr-2 text-accent"></i>
+                                    Account Information
+                                </h4>
+                                <form id="settingsForm" class="space-y-4">
+                                    <div>
+                                        <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">ISP Provider</label>
+                                        <input type="text" name="isp" required value="${this.settings.isp}"
+                                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Monthly Bill Amount</label>
+                                        <input type="number" name="monthlyAmount" required step="0.01" value="${this.settings.monthlyAmount || ''}"
+                                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wide">Connection Start Date</label>
+                                        <input type="date" name="startDate" required value="${this.settings.startDate}"
+                                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 transition-all">
+                                    </div>
+                                    <button type="submit" class="w-full gradient-accent text-white py-3 rounded-xl font-bold shadow-lg hover-lift">
+                                        <i class="fas fa-save mr-2"></i>Save Changes
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- Theme Settings -->
+                            <div class="mb-8">
+                                <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-palette mr-2 text-accent"></i>
+                                    Appearance
+                                </h4>
+                                <div class="mb-4">
+                                    <label class="block mb-3 font-semibold text-gray-700 text-sm uppercase tracking-wide">Accent Color</label>
+                                    <div class="grid grid-cols-6 gap-3">
+                                        ${themeColors.map(tc => `
+                                            <div class="theme-color-option ${this.userPrefs.accentColor === tc.color ? 'active' : ''}" 
+                                                style="background: linear-gradient(135deg, rgb(${tc.color}) 0%, rgb(${tc.secondary}) 100%);"
+                                                onclick="app.setAccentColor('${tc.color}', '${tc.secondary}')"
+                                                title="${tc.name}">
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Data Management -->
+                            <div class="mb-8">
+                                <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-database mr-2 text-accent"></i>
+                                    Data Management
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <button onclick="app.exportData()" 
+                                        class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition hover-lift flex items-center justify-center gap-2">
+                                        <i class="fas fa-download"></i>
+                                        <span>Export Data</span>
+                                    </button>
+                                    <button onclick="app.importData()" 
+                                        class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition hover-lift flex items-center justify-center gap-2">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Import Data</span>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-3 flex items-start gap-2">
+                                    <i class="fas fa-info-circle mt-0.5"></i>
+                                    <span>Export your data as JSON for backup. Import to restore from a previous backup file.</span>
+                                </p>
+                            </div>
+                            
+                            <!-- Danger Zone -->
+                            <div class="mb-6">
+                                <h4 class="text-lg font-bold text-red-600 mb-4 flex items-center">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    Danger Zone
+                                </h4>
+                                <button onclick="app.resetDatabase()" 
+                                    class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition hover-lift">
+                                    <i class="fas fa-trash-alt mr-2"></i>Reset All Data
+                                </button>
+                                <p class="text-xs text-red-500 mt-3 flex items-start gap-2">
+                                    <i class="fas fa-exclamation-circle mt-0.5"></i>
+                                    <span>This will permanently delete all your settings and payment records.</span>
+                                </p>
+                            </div>
+                            
+                            <button type="button" onclick="app.closeModal()" 
+                                class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                                <i class="fas fa-times mr-2"></i>Close Settings
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modal);
+                
+                anime({
+                    targets: '#settingsModal > div',
+                    scale: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutElastic(1, .7)'
+                });
+                
+                document.getElementById('settingsForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    await db.settings.update(1, {
+                        isp: formData.get('isp'),
+                        monthlyAmount: formData.get('monthlyAmount'),
+                        startDate: formData.get('startDate')
+                    });
+                    await this.loadData();
+                    this.closeModal();
+                    this.render();
+                    this.renderCharts();
+                    this.showToast('Settings updated successfully!', 'success');
+                };
+            },
+            
+            async exportData() {
+                const data = {
+                    settings: this.settings,
+                    payments: this.payments,
+                    userPrefs: this.userPrefs,
+                    exportDate: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bill-tracker-backup-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('Data exported successfully!', 'success');
+            },
+            
+            importData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const text = await file.text();
+                        try {
+                            const data = JSON.parse(text);
+                            if (data.settings && data.payments) {
+                                await db.settings.put({ id: 1, ...data.settings });
+                                await db.payments.clear();
+                                for (const payment of data.payments) {
+                                    delete payment.id;
+                                    await db.payments.add(payment);
+                                }
+                                if (data.userPrefs) {
+                                    await db.userPrefs.put({ id: 1, ...data.userPrefs });
+                                }
+                                await this.loadData();
+                                await this.loadUserPrefs();
+                                this.applyTheme();
+                                this.closeModal();
+                                this.render();
+                                this.renderCharts();
+                                this.showToast('Data imported successfully!', 'success');
+                            } else {
+                                this.showToast('Invalid file format!', 'error');
+                            }
+                        } catch (err) {
+                            this.showToast('Error importing data!', 'error');
+                        }
+                    }
+                };
+                input.click();
+            },
+            
+            async resetDatabase() {
+                if (confirm('⚠️ WARNING: This will permanently delete ALL your data. This action cannot be undone. Are you absolutely sure?')) {
+                    await db.delete();
+                    location.reload();
+                }
+            },
+            
+            closeModal() {
+                const modal = document.querySelector('.modal-overlay');
+                if (modal) {
+                    anime({
+                        targets: modal.querySelector('div'),
+                        scale: 0,
+                        duration: 300,
+                        easing: 'easeInBack',
+                        complete: () => modal.remove()
+                    });
+                }
+            },
+            
+            showToast(message, type = 'info') {
+                const colors = {
+                    success: 'from-emerald-500 to-emerald-600',
+                    error: 'from-red-500 to-red-600',
+                    info: 'from-blue-500 to-blue-600'
+                };
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    info: 'fa-info-circle'
+                };
+                const toast = document.createElement('div');
+                toast.className = `toast bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3`;
+                toast.innerHTML = `<i class="fas ${icons[type]} text-lg"></i><span class="font-semibold">${message}</span>`;
+                document.body.appendChild(toast);
+                
+                anime({
+                    targets: toast,
+                    translateX: [400, 0],
+                    opacity: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutCubic'
+                });
+                
+                setTimeout(() => {
+                    anime({
+                        targets: toast,
+                        translateX: 400,
+                        opacity: 0,
+                        duration: 400,
+                        easing: 'easeInCubic',
+                        complete: () => toast.remove()
+                    });
+                }, 3500);
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
