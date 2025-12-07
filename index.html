@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,61 +16,61 @@
             --accent-color: 102, 126, 234;
             --accent-secondary: 118, 75, 162;
         }
-        
+
         body {
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        
+
         body.light {
             background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
             color: #1f2937;
         }
-        
+
         body.dark {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #f1f5f9;
         }
-        
+
         .glass {
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        
+
         body.light .glass {
             background: rgba(255, 255, 255, 0.95);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
-        
+
         body.dark .glass {
             background: rgba(30, 41, 59, 0.95);
             border-color: rgba(255, 255, 255, 0.05);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        
+
         .gradient-accent {
-            background: linear-gradient(135deg, 
-                rgb(var(--accent-color)) 0%, 
-                rgb(var(--accent-secondary)) 100%);
+            background: linear-gradient(135deg,
+                    rgb(var(--accent-color)) 0%,
+                    rgb(var(--accent-secondary)) 100%);
         }
-        
+
         .text-accent {
             color: rgb(var(--accent-color));
         }
-        
+
         .bg-accent-light {
             background: rgba(var(--accent-color), 0.1);
         }
-        
+
         .border-accent {
             border-color: rgb(var(--accent-color));
         }
-        
+
         .modal-overlay {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(8px);
         }
-        
+
         .fab {
             position: fixed;
             bottom: 24px;
@@ -81,42 +82,42 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             z-index: 40;
         }
-        
+
         .fab:hover {
             transform: scale(1.1) rotate(90deg);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
         }
-        
+
         .hover-lift {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        
+
         .hover-lift:hover {
             transform: translateY(-2px);
         }
-        
+
         .toast {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 9999;
         }
-        
+
         .chart-container {
             position: relative;
             height: 300px;
             width: 100%;
         }
-        
+
         .countdown-ring {
             transform: rotate(-90deg);
         }
-        
+
         .progress-ring-circle {
             transition: stroke-dashoffset 0.35s;
             transform-origin: 50% 50%;
         }
-        
+
         .theme-color-option {
             width: 48px;
             height: 48px;
@@ -125,40 +126,74 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             border: 3px solid transparent;
         }
-        
+
         .theme-color-option:hover {
             transform: scale(1.1);
         }
-        
+
         .theme-color-option.active {
             border-color: white;
             box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
         }
-        
-        body.dark .text-gray-800 { color: #f1f5f9; }
-        body.dark .text-gray-700 { color: #cbd5e1; }
-        body.dark .text-gray-600 { color: #94a3b8; }
-        body.dark .text-gray-500 { color: #64748b; }
-        body.dark .bg-gray-50 { background: #1e293b; }
-        body.dark .bg-gray-100 { background: #334155; }
-        body.dark .border-gray-200 { border-color: #475569; }
-        body.dark .border-gray-100 { border-color: #334155; }
-        
+
+        body.dark .text-gray-800 {
+            color: #f1f5f9;
+        }
+
+        body.dark .text-gray-700 {
+            color: #cbd5e1;
+        }
+
+        body.dark .text-gray-600 {
+            color: #94a3b8;
+        }
+
+        body.dark .text-gray-500 {
+            color: #64748b;
+        }
+
+        body.dark .bg-gray-50 {
+            background: #1e293b;
+        }
+
+        body.dark .bg-gray-100 {
+            background: #334155;
+        }
+
+        body.dark .border-gray-200 {
+            border-color: #475569;
+        }
+
+        body.dark .border-gray-100 {
+            border-color: #334155;
+        }
+
         .streak-flame {
             animation: flicker 2s infinite;
         }
-        
+
         @keyframes flicker {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
         }
-        
-        input:focus, select:focus, textarea:focus {
+
+        input:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: rgb(var(--accent-color));
             box-shadow: 0 0 0 3px rgba(var(--accent-color), 0.1);
         }
-        
+
         .search-highlight {
             background: rgba(var(--accent-color), 0.2);
             padding: 2px 4px;
@@ -166,9 +201,10 @@
         }
     </style>
 </head>
+
 <body class="p-4 light">
     <div id="app" class="max-w-7xl mx-auto"></div>
-    
+
     <script>
         const db = new Dexie('BillTrackerDB');
         db.version(2).stores({
@@ -184,12 +220,12 @@
             charts: {},
             searchQuery: '',
             filterMethod: 'all',
-            
+
             async init() {
                 await this.loadData();
                 await this.loadUserPrefs();
                 this.applyTheme();
-                
+
                 if (!this.settings) {
                     this.showWelcomeModal();
                 } else {
@@ -197,12 +233,12 @@
                     this.renderCharts();
                 }
             },
-            
+
             async loadData() {
                 this.settings = await db.settings.get(1);
                 this.payments = await db.payments.orderBy('date').reverse().toArray();
             },
-            
+
             async loadUserPrefs() {
                 this.userPrefs = await db.userPrefs.get(1);
                 if (!this.userPrefs) {
@@ -215,13 +251,13 @@
                     await db.userPrefs.put(this.userPrefs);
                 }
             },
-            
+
             applyTheme() {
                 document.body.className = this.userPrefs.theme + ' p-4';
                 document.documentElement.style.setProperty('--accent-color', this.userPrefs.accentColor);
                 document.documentElement.style.setProperty('--accent-secondary', this.userPrefs.accentSecondary);
             },
-            
+
             async toggleTheme() {
                 this.userPrefs.theme = this.userPrefs.theme === 'light' ? 'dark' : 'light';
                 await db.userPrefs.update(1, { theme: this.userPrefs.theme });
@@ -229,7 +265,7 @@
                 this.render();
                 this.renderCharts();
             },
-            
+
             async setAccentColor(color, secondary) {
                 this.userPrefs.accentColor = color;
                 this.userPrefs.accentSecondary = secondary;
@@ -238,15 +274,15 @@
                 this.render();
                 this.renderCharts();
             },
-            
+
             showWelcomeModal() {
                 const modal = `
                     <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" id="welcomeModal">
                         <div class="glass rounded-3xl p-8 md:p-10 max-w-lg w-full" style="transform: scale(0);">
                             <div class="text-center mb-8">
-                                <div class="w-20 h-20 mx-auto mb-6 rounded-full gradient-accent flex items-center justify-center">
-                                    <i class="fas fa-wifi text-4xl text-white"></i>
-                                </div>
+                                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                                     <img src="image/logo.png" alt="Logo" class="w-12 h-12 object-contain">
+                                    </div>
                                 <h2 class="text-4xl font-bold mb-3 text-gray-800">Welcome</h2>
                                 <p class="text-gray-600 text-lg">Let's set up your bill tracking system</p>
                             </div>
@@ -276,14 +312,14 @@
                     </div>
                 `;
                 document.getElementById('app').innerHTML = modal;
-                
+
                 anime({
                     targets: '#welcomeModal > div',
                     scale: [0, 1],
                     duration: 600,
                     easing: 'easeOutElastic(1, .6)'
                 });
-                
+
                 document.getElementById('welcomeForm').onsubmit = async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
@@ -299,12 +335,12 @@
                     this.showToast('Setup completed successfully!', 'success');
                 };
             },
-            
+
             render() {
                 const stats = this.calculateStats();
                 const monthlyData = this.getMonthlyData();
                 const streak = this.calculateStreak();
-                
+
                 document.getElementById('app').innerHTML = `
                     <header class="glass rounded-3xl p-6 md:p-8 mb-6">
                         <div class="flex justify-between items-center flex-wrap gap-4">
@@ -476,57 +512,57 @@
                         <i class="fas fa-plus text-2xl"></i>
                     </button>
                 `;
-                
+
                 this.animateStats();
                 this.attachEventListeners();
             },
-            
+
             attachEventListeners() {
                 const searchInput = document.getElementById('searchInput');
                 const filterSelect = document.getElementById('filterSelect');
-                
+
                 if (searchInput) {
                     searchInput.value = this.searchQuery;
                     filterSelect.value = this.filterMethod;
-                    
+
                     searchInput.addEventListener('input', (e) => {
                         this.searchQuery = e.target.value;
                         this.updatePaymentTable();
                     });
-                    
+
                     filterSelect.addEventListener('change', (e) => {
                         this.filterMethod = e.target.value;
                         this.updatePaymentTable();
                     });
                 }
             },
-            
+
             getFilteredPayments() {
                 let filtered = this.payments;
-                
+
                 if (this.filterMethod !== 'all') {
                     filtered = filtered.filter(p => p.method === this.filterMethod);
                 }
-                
+
                 if (this.searchQuery) {
                     const query = this.searchQuery.toLowerCase();
-                    filtered = filtered.filter(p => 
+                    filtered = filtered.filter(p =>
                         p.amount.toString().includes(query) ||
                         p.method.toLowerCase().includes(query) ||
                         (p.note && p.note.toLowerCase().includes(query))
                     );
                 }
-                
+
                 return filtered;
             },
-            
+
             updatePaymentTable() {
                 const tbody = document.getElementById('paymentTable');
                 if (tbody) {
                     tbody.innerHTML = this.renderPaymentTable();
                 }
             },
-            
+
             renderPaymentTable() {
                 const filtered = this.getFilteredPayments();
                 if (!filtered.length) {
@@ -534,13 +570,13 @@
                 }
                 return filtered.map(p => this.renderPaymentRow(p)).join('');
             },
-            
+
             renderCountdownCircle(days, statusClass) {
                 const percentage = Math.max(0, Math.min(100, (days / 30) * 100));
                 const radius = 70;
                 const circumference = 2 * Math.PI * radius;
                 const offset = circumference - (percentage / 100) * circumference;
-                
+
                 return `
                     <div class="relative w-48 h-48">
                         <svg class="w-full h-full countdown-ring" viewBox="0 0 160 160">
@@ -561,7 +597,7 @@
                     </div>
                 `;
             },
-            
+
             renderStatCard(label, value, icon, statusClass, bgClass, isStreak = false) {
                 return `
                     <div class="glass rounded-2xl p-6 hover-lift stat-card" style="opacity: 0;">
@@ -580,7 +616,7 @@
                     </div>
                 `;
             },
-            
+
             renderPaymentRow(payment) {
                 return `
                     <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
@@ -605,7 +641,7 @@
                     </tr>
                 `;
             },
-            
+
             calculateStats() {
                 const now = new Date();
                 const lastPayment = this.payments[0];
@@ -613,16 +649,16 @@
                 let nextDueDate = 'Not set';
                 let statusClass = 'text-emerald-600';
                 let statusText = 'On Track';
-                
+
                 if (lastPayment) {
                     const lastDate = new Date(lastPayment.date);
                     const nextDue = new Date(lastDate);
                     nextDue.setDate(nextDue.getDate() + 30);
                     nextDueDate = nextDue.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    
+
                     const diffTime = nextDue - now;
                     daysRemainingNum = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
+
                     if (daysRemainingNum < 0) {
                         statusClass = 'text-red-600';
                         statusText = 'Overdue!';
@@ -631,10 +667,10 @@
                         statusText = 'Due Soon';
                     }
                 }
-                
+
                 const totalAmount = this.payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
                 const avgAmount = this.payments.length ? (totalAmount / this.payments.length).toFixed(2) : '0.00';
-                
+
                 return {
                     daysRemainingNum: daysRemainingNum,
                     nextDueDate: nextDueDate,
@@ -645,36 +681,36 @@
                     statusText: statusText
                 };
             },
-            
+
             getMonthlyData() {
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
-                
+
                 const lastPayment = this.payments.find(p => {
                     const pDate = new Date(p.date);
                     return pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear;
                 });
-                
+
                 return { lastPayment };
             },
-            
+
             calculateStreak() {
                 if (this.payments.length === 0) return 0;
-                
+
                 const now = new Date();
                 let streak = 0;
                 let checkDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                
+
                 for (let i = 0; i < 24; i++) {
                     const monthStart = new Date(checkDate);
                     const monthEnd = new Date(checkDate.getFullYear(), checkDate.getMonth() + 1, 0);
-                    
+
                     const hasPayment = this.payments.some(p => {
                         const pDate = new Date(p.date);
                         return pDate >= monthStart && pDate <= monthEnd;
                     });
-                    
+
                     if (hasPayment) {
                         streak++;
                         checkDate.setMonth(checkDate.getMonth() - 1);
@@ -682,10 +718,10 @@
                         break;
                     }
                 }
-                
+
                 return streak;
             },
-            
+
             animateStats() {
                 anime({
                     targets: '.stat-card',
@@ -696,25 +732,25 @@
                     easing: 'easeOutCubic'
                 });
             },
-            
+
             renderCharts() {
                 setTimeout(() => {
                     this.renderYearlyChart();
                     this.renderMonthlyChart();
                 }, 100);
             },
-            
+
             renderYearlyChart() {
                 const canvas = document.getElementById('yearlyChart');
                 if (!canvas) return;
-                
+
                 if (this.charts.yearly) {
                     this.charts.yearly.destroy();
                 }
-                
+
                 const yearlyData = this.getYearlyData();
                 const isDark = this.userPrefs.theme === 'dark';
-                
+
                 this.charts.yearly = new Chart(canvas, {
                     type: 'bar',
                     data: {
@@ -761,18 +797,18 @@
                     }
                 });
             },
-            
+
             renderMonthlyChart() {
                 const canvas = document.getElementById('monthlyChart');
                 if (!canvas) return;
-                
+
                 if (this.charts.monthly) {
                     this.charts.monthly.destroy();
                 }
-                
+
                 const monthlyData = this.getMonthlyTrendData();
                 const isDark = this.userPrefs.theme === 'dark';
-                
+
                 this.charts.monthly = new Chart(canvas, {
                     type: 'line',
                     data: {
@@ -825,33 +861,33 @@
                     }
                 });
             },
-            
+
             getYearlyData() {
                 const now = new Date();
                 const years = {};
-                
+
                 this.payments.forEach(p => {
                     const year = new Date(p.date).getFullYear();
                     years[year] = (years[year] || 0) + parseFloat(p.amount);
                 });
-                
+
                 const sortedYears = Object.keys(years).sort();
                 return {
                     labels: sortedYears,
                     data: sortedYears.map(y => years[y])
                 };
             },
-            
+
             getMonthlyTrendData() {
                 const months = {};
                 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                
+
                 this.payments.forEach(p => {
                     const date = new Date(p.date);
                     const key = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
                     months[key] = (months[key] || 0) + parseFloat(p.amount);
                 });
-                
+
                 const sortedKeys = Object.keys(months).sort().slice(-12);
                 return {
                     labels: sortedKeys.map(k => {
@@ -861,7 +897,7 @@
                     data: sortedKeys.map(k => months[k])
                 };
             },
-            
+
             showAddPaymentModal(payment = null) {
                 const isEdit = payment !== null;
                 const modal = `
@@ -917,16 +953,16 @@
                         </div>
                     </div>
                 `;
-                
+
                 document.body.insertAdjacentHTML('beforeend', modal);
-                
+
                 anime({
                     targets: '#paymentModal > div',
                     scale: [0, 1],
                     duration: 500,
                     easing: 'easeOutElastic(1, .7)'
                 });
-                
+
                 document.getElementById('paymentForm').onsubmit = async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
@@ -937,7 +973,7 @@
                         note: formData.get('note'),
                         isp: this.settings.isp
                     };
-                    
+
                     if (isEdit) {
                         await db.payments.update(payment.id, paymentData);
                         this.showToast('Payment updated successfully!', 'success');
@@ -945,19 +981,19 @@
                         await db.payments.add(paymentData);
                         this.showToast('Payment added successfully!', 'success');
                     }
-                    
+
                     await this.loadData();
                     this.closeModal();
                     this.render();
                     this.renderCharts();
                 };
             },
-            
+
             async editPayment(id) {
                 const payment = await db.payments.get(id);
                 this.showAddPaymentModal(payment);
             },
-            
+
             async deletePayment(id) {
                 if (confirm('Are you sure you want to delete this payment?')) {
                     await db.payments.delete(id);
@@ -967,7 +1003,7 @@
                     this.showToast('Payment deleted successfully!', 'info');
                 }
             },
-            
+
             sortPayments(field) {
                 if (field === 'date') {
                     this.payments.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -976,7 +1012,7 @@
                 }
                 this.updatePaymentTable();
             },
-            
+
             showSettingsModal() {
                 const themeColors = [
                     { name: 'Purple', color: '102, 126, 234', secondary: '118, 75, 162' },
@@ -986,7 +1022,7 @@
                     { name: 'Orange', color: '249, 115, 22', secondary: '234, 88, 12' },
                     { name: 'Red', color: '239, 68, 68', secondary: '220, 38, 38' }
                 ];
-                
+
                 const modal = `
                     <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" id="settingsModal">
                         <div class="glass rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto" style="transform: scale(0);">
@@ -1092,16 +1128,16 @@
                         </div>
                     </div>
                 `;
-                
+
                 document.body.insertAdjacentHTML('beforeend', modal);
-                
+
                 anime({
                     targets: '#settingsModal > div',
                     scale: [0, 1],
                     duration: 500,
                     easing: 'easeOutElastic(1, .7)'
                 });
-                
+
                 document.getElementById('settingsForm').onsubmit = async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
@@ -1117,7 +1153,7 @@
                     this.showToast('Settings updated successfully!', 'success');
                 };
             },
-            
+
             async exportData() {
                 const data = {
                     settings: this.settings,
@@ -1134,7 +1170,7 @@
                 URL.revokeObjectURL(url);
                 this.showToast('Data exported successfully!', 'success');
             },
-            
+
             importData() {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -1172,14 +1208,14 @@
                 };
                 input.click();
             },
-            
+
             async resetDatabase() {
                 if (confirm('⚠️ WARNING: This will permanently delete ALL your data. This action cannot be undone. Are you absolutely sure?')) {
                     await db.delete();
                     location.reload();
                 }
             },
-            
+
             closeModal() {
                 const modal = document.querySelector('.modal-overlay');
                 if (modal) {
@@ -1192,7 +1228,7 @@
                     });
                 }
             },
-            
+
             showToast(message, type = 'info') {
                 const colors = {
                     success: 'from-emerald-500 to-emerald-600',
@@ -1208,7 +1244,7 @@
                 toast.className = `toast bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3`;
                 toast.innerHTML = `<i class="fas ${icons[type]} text-lg"></i><span class="font-semibold">${message}</span>`;
                 document.body.appendChild(toast);
-                
+
                 anime({
                     targets: toast,
                     translateX: [400, 0],
@@ -1216,7 +1252,7 @@
                     duration: 500,
                     easing: 'easeOutCubic'
                 });
-                
+
                 setTimeout(() => {
                     anime({
                         targets: toast,
@@ -1229,8 +1265,9 @@
                 }, 3500);
             }
         };
-        
+
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
+
 </html>
